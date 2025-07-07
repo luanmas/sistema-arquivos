@@ -4,12 +4,12 @@ from entity.inode import Inode
 
 class FileSystem:
     def __init__(self):
-        self.inodes: Dict[str, Inode] = {}  # Mapa de ID para Inode
-        self.root = Inode("/", True)  # Diretório raiz
+        self.inodes: Dict[str, Inode] = {}
+        self.root = Inode("/", True)
         self.inodes[self.root.id] = self.root
-        self.current_dir = self.root  # Diretório atual
-        self.current_path = "/"  # Caminho atual para exibição
-        self.next_block_id = 0  # Para alocar índices fictícios de blocos
+        self.current_dir = self.root
+        self.current_path = "/"
+        self.next_block_id = 0
 
     def create_file(self, name: str):
         if name in self.current_dir.entries:
@@ -40,7 +40,7 @@ class FileSystem:
 
     def cd(self, path: str):
         if path == ".":
-            return  # Fica no diretório atual
+            return
         if path == "..":
             # Encontrar o diretório pai
             for inode in self.inodes.values():
@@ -81,29 +81,28 @@ class FileSystem:
                 break
         self.current_path = "/".join(reversed(path)) or "/"
 
-        # Novo método para movimentação de arquivos
     def move(self, file_name: str, dest_path: str):
-        # Verificar se o arquivo existe no diretório atual
+        # ve se o arquivo existe no diretório atual
         if file_name not in self.current_dir.entries:
             print(f"Erro: Arquivo '{file_name}' não encontrado no diretório atual.")
             print(f"Diretório atual: {self.current_path}")
             print(f"Conteúdo do diretório atual: {list(self.current_dir.entries.keys())}")
             return
         
-        # Obter o inode do arquivo
+        # pega o inote do arquivo
         file_inode_id = self.current_dir.entries[file_name]
         file_inode = self.inodes[file_inode_id]
         
-        # Verificar se é um arquivo (não diretório)
+        # ve se é um arquivo ou diretório
         if file_inode.is_dir:
             print(f"Erro: '{file_name}' é um diretório. Apenas arquivos podem ser movidos.")
             return
 
-        # Encontrar o diretório de destino
+        # acha o diretório de destino
         if dest_path == "/":
             dest_dir = self.root
         else:
-            # Procurar o diretório de destino no diretório atual
+            # encontra o diretório de destino no diretório atual
             if dest_path not in self.current_dir.entries:
                 print(f"Erro: Diretório de destino '{dest_path}' não encontrado.")
                 return
@@ -113,12 +112,11 @@ class FileSystem:
                 print(f"Erro: '{dest_path}' não é um diretório.")
                 return
 
-        # Verificar se já existe um arquivo com o mesmo nome no destino
+        # ve se já existe um arquivo com o mesmo nome no destino
         if file_name in dest_dir.entries:
             print(f"Erro: Já existe um arquivo ou diretório chamado '{file_name}' em '{dest_path}'.")
             return
 
-        # Mover o arquivo: remover do diretório atual e adicionar ao destino
-        del self.current_dir.entries[file_name]  # Remove do diretório atual
-        dest_dir.entries[file_name] = file_inode_id  # Adiciona ao diretório de destino
+        del self.current_dir.entries[file_name]
+        dest_dir.entries[file_name] = file_inode_id
         print(f"Arquivo '{file_name}' movido para '{dest_path}' com sucesso.")

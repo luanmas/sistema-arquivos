@@ -34,6 +34,24 @@ def main():
                 print("Uso: move <nome_arquivo> <novo_diretorio>")
             else:
                 fs.move(args[0], args[1])
+        elif cmd == "write":
+            if len(args) < 2:
+                print("Uso: write <arquivo> <texto>")
+            else:
+                nome_arquivo = args[0]
+                texto = ' '.join(args[1:])
+                fs.write_file(nome_arquivo, texto)
+        elif cmd == "read":
+            if len(args) != 1:
+                print("Uso: read <arquivo>")
+            else:
+                fs.read_file(args[0])
+        elif cmd == "delete":
+            if len(args) != 1:
+                print("Uso: delete <nome>")
+            else:
+                fs.delete(args[0])
+
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, exit")
 

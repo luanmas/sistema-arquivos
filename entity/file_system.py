@@ -1,6 +1,8 @@
 from typing import Dict
 from entity.inode import Inode
 
+BLOCK_SIZE = 8
+TOTAL_BLOCKS = 10
 
 class FileSystem:
     def __init__(self):
@@ -10,6 +12,8 @@ class FileSystem:
         self.current_dir = self.root
         self.current_path = "/"
         self.next_block_id = 0
+        self.disk = [''] * TOTAL_BLOCKS
+        self.free_blocks = list(range(TOTAL_BLOCKS))
 
     def create_file(self, name: str):
         if name in self.current_dir.entries:
@@ -120,3 +124,75 @@ class FileSystem:
         del self.current_dir.entries[file_name]
         dest_dir.entries[file_name] = file_inode_id
         print(f"Arquivo '{file_name}' movido para '{dest_path}' com sucesso.")
+
+
+    def write_file(self, name: str, data: str):
+
+        if name not in self.current_dir.entries:
+            self.create_file(name)
+
+        inode_id = self.current_dir.entries[name]
+        inode = self.inodes[inode_id]
+
+        for b in inode.data_blocks:
+            self.disk[b] = ''
+            self.free_blocks.append(b)
+
+        num_blocks = (len(data) + BLOCK_SIZE - 1) // BLOCK_SIZE
+        if len(self.free_blocks) < num_blocks:
+            print("Erro: Espaço insuficiente em disco.")
+            return
+
+        blocos_alocados = [self.free_blocks.pop(0) for _ in range(num_blocks)]
+
+        for i, b in enumerate(blocos_alocados):
+            inicio = i * BLOCK_SIZE
+            fim = inicio + BLOCK_SIZE
+            self.disk[b] = data[inicio:fim]
+
+        inode.size = len(data)
+        inode.data_blocks = blocos_alocados
+
+        print(f"Dados escritos em '{name}' ({inode.size} bytes) nos blocos {blocos_alocados}")
+
+    def read_file(self, name: str):
+        if name not in self.current_dir.entries:
+            print(f"Erro: Arquivo '{name}' não encontrado.")
+            return
+
+        inode_id = self.current_dir.entries[name]
+        inode = self.inodes[inode_id]
+
+        if inode.is_dir:
+            print(f"Erro: '{name}' é um diretório.")
+            return
+
+        conteudo = ''.join([self.disk[b] for b in inode.data_blocks])
+        print(f"Conteúdo de '{name}' ({inode.size} bytes):")
+        print(conteudo[:inode.size])
+
+    def delete(self, name: str):
+        if name not in self.current_dir.entries:
+            print(f"Erro: '{name}' não existe no diretório atual.")
+            return
+
+        inode_id = self.current_dir.entries[name]
+        inode = self.inodes[inode_id]
+
+        # Se for diretório, verifica se está vazio
+        if inode.is_dir:
+            if inode.entries:
+                print(f"Erro: Diretório '{name}' não está vazio.")
+                return
+            else:
+                del self.inodes[inode_id]
+                del self.current_dir.entries[name]
+                print(f"Diretório '{name}' excluído com sucesso.")
+        else:
+            # Arquivo: liberar blocos e remover inode
+            for b in inode.data_blocks:
+                self.disk[b] = ''
+                self.free_blocks.append(b)
+            del self.inodes[inode_id]
+            del self.current_dir.entries[name]
+            print(f"Arquivo '{name}' excluído com sucesso.")

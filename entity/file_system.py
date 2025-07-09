@@ -19,7 +19,7 @@ class FileSystem:
         if name in self.current_dir.entries:
             print(f"Erro: '{name}' já existe neste diretório.")
             return
-        inode = Inode(name, False)
+        inode = Inode(name, False, parent=self.current_dir)
         self.inodes[inode.id] = inode
         self.current_dir.entries[name] = inode.id
         print(f"Arquivo '{name}' criado com sucesso.")
@@ -28,7 +28,7 @@ class FileSystem:
         if name in self.current_dir.entries:
             print(f"Erro: '{name}' já existe neste diretório.")
             return
-        inode = Inode(name, True)
+        inode = Inode(name, True, parent=self.current_dir)
         self.inodes[inode.id] = inode
         self.current_dir.entries[name] = inode.id
         print(f"Diretório '{name}' criado com sucesso.")
@@ -46,13 +46,10 @@ class FileSystem:
         if path == ".":
             return
         if path == "..":
-            # Encontrar o diretório pai
-            for inode in self.inodes.values():
-                if inode.is_dir and self.current_dir.id in inode.entries.values():
-                    self.current_dir = inode
-                    self._update_path()
-                    return
-            if self.current_dir.id == self.root.id:
+            if self.current_dir.parent is not None:
+                self.current_dir = self.current_dir.parent
+                self._update_path()
+            else:
                 print("Já está na raiz.")
             return
         if path not in self.current_dir.entries:
@@ -67,67 +64,53 @@ class FileSystem:
         self._update_path()
 
     def _update_path(self):
-        if self.current_dir.id == self.root.id:
+        if self.current_dir == self.root:
             self.current_path = "/"
             return
         path = []
         current = self.current_dir
-        while current.id != self.root.id:
-            for inode in self.inodes.values():
-                if inode.is_dir and current.id in inode.entries.values():
-                    for name, id in inode.entries.items():
-                        if id == current.id:
-                            path.append(name)
-                            current = inode
-                            break
-            if current.id == self.root.id:
-                path.append("")
-                break
-        self.current_path = "/".join(reversed(path)) or "/"
+        while current != self.root:
+            path.append(current.name)
+            current = current.parent
+        self.current_path = "/" + "/".join(reversed(path))
 
     def move(self, file_name: str, dest_path: str):
-        # ve se o arquivo existe no diretório atual
         if file_name not in self.current_dir.entries:
             print(f"Erro: Arquivo '{file_name}' não encontrado no diretório atual.")
             print(f"Diretório atual: {self.current_path}")
             print(f"Conteúdo do diretório atual: {list(self.current_dir.entries.keys())}")
             return
-        
-        # pega o inote do arquivo
+
         file_inode_id = self.current_dir.entries[file_name]
         file_inode = self.inodes[file_inode_id]
-        
-        # ve se é um arquivo ou diretório
+
         if file_inode.is_dir:
             print(f"Erro: '{file_name}' é um diretório. Apenas arquivos podem ser movidos.")
             return
 
-        # acha o diretório de destino
+        dest_dir = None
         if dest_path == "/":
             dest_dir = self.root
         else:
-            # encontra o diretório de destino no diretório atual
-            if dest_path not in self.current_dir.entries:
-                print(f"Erro: Diretório de destino '{dest_path}' não encontrado.")
-                return
-            dest_inode_id = self.current_dir.entries[dest_path]
-            dest_dir = self.inodes[dest_inode_id]
-            if not dest_dir.is_dir:
-                print(f"Erro: '{dest_path}' não é um diretório.")
-                return
+            for inode in self.inodes.values():
+                if inode.is_dir and inode.name == dest_path:
+                    dest_dir = inode
+                    break
 
-        # ve se já existe um arquivo com o mesmo nome no destino
+        if dest_dir is None:
+            print(f"Erro: Diretório de destino '{dest_path}' não encontrado.")
+            return
+
         if file_name in dest_dir.entries:
             print(f"Erro: Já existe um arquivo ou diretório chamado '{file_name}' em '{dest_path}'.")
             return
 
         del self.current_dir.entries[file_name]
         dest_dir.entries[file_name] = file_inode_id
+        file_inode.parent = dest_dir
         print(f"Arquivo '{file_name}' movido para '{dest_path}' com sucesso.")
 
-
     def write_file(self, name: str, data: str):
-
         if name not in self.current_dir.entries:
             self.create_file(name)
 
@@ -141,6 +124,8 @@ class FileSystem:
         num_blocks = (len(data) + BLOCK_SIZE - 1) // BLOCK_SIZE
         if len(self.free_blocks) < num_blocks:
             print("Erro: Espaço insuficiente em disco.")
+            inode.size = 0
+            inode.data_blocks = []
             return
 
         blocos_alocados = [self.free_blocks.pop(0) for _ in range(num_blocks)]
@@ -179,7 +164,6 @@ class FileSystem:
         inode_id = self.current_dir.entries[name]
         inode = self.inodes[inode_id]
 
-        # Se for diretório, verifica se está vazio
         if inode.is_dir:
             if inode.entries:
                 print(f"Erro: Diretório '{name}' não está vazio.")
@@ -189,10 +173,27 @@ class FileSystem:
                 del self.current_dir.entries[name]
                 print(f"Diretório '{name}' excluído com sucesso.")
         else:
-            # Arquivo: liberar blocos e remover inode
             for b in inode.data_blocks:
                 self.disk[b] = ''
                 self.free_blocks.append(b)
             del self.inodes[inode_id]
             del self.current_dir.entries[name]
             print(f"Arquivo '{name}' excluído com sucesso.")
+
+    def detalhes(self, nome: str):
+        if nome not in self.current_dir.entries:
+            print(f"Erro: '{nome}' não encontrado.")
+            return
+
+        inode_id = self.current_dir.entries[nome]
+        inode = self.inodes[inode_id]
+
+        print(f"ID: {inode.id}")
+        print(f"Nome: {inode.name}")
+        print(f"Diretório: {'Sim' if inode.is_dir else 'Não'}")
+
+        if inode.is_dir:
+            print(f"Entradas: {list(inode.entries.keys())}")
+        else:
+            print(f"Tamanho: {inode.size} bytes")
+            print(f"Blocos alocados: {inode.data_blocks}")

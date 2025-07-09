@@ -21,6 +21,7 @@ class SistemaArquivos:
             print(f"Erro: '{nome}' já existe neste diretório.")
             return
         no = ListaEncadeada(nome, False)
+        no.parent = self.diretorio_atual
         self.nos[no.id] = no
         self.diretorio_atual.entries[nome] = no.id
         print(f"Arquivo '{nome}' criado com sucesso.")
@@ -30,6 +31,7 @@ class SistemaArquivos:
             print(f"Erro: '{nome}' já existe neste diretório.")
             return
         no = ListaEncadeada(nome, True)
+        no.parent = self.diretorio_atual
         self.nos[no.id] = no
         self.diretorio_atual.entries[nome] = no.id
         print(f"Diretório '{nome}' criado com sucesso.")
@@ -47,12 +49,10 @@ class SistemaArquivos:
         if caminho == ".":
             return
         if caminho == "..":
-            for no in self.nos.values():
-                if no.is_dir and self.diretorio_atual.id in no.entries.values():
-                    self.diretorio_atual = no
-                    self._atualizar_caminho()
-                    return
-            if self.diretorio_atual.id == self.root.id:
+            if self.diretorio_atual.parent:
+                self.diretorio_atual = self.diretorio_atual.parent
+                self._atualizar_caminho()
+            else:
                 print("Já está na raiz.")
             return
         if caminho not in self.diretorio_atual.entries:
@@ -94,7 +94,18 @@ class SistemaArquivos:
         if no.is_dir:
             print(f"Erro: '{nome_arquivo}' é um diretório. Apenas arquivos podem ser movidos.")
             return
-        destino_dir = self.root if destino == "/" else self.nos[self.diretorio_atual.entries.get(destino)]
+        if destino == "/":
+            destino_dir = self.root
+        elif destino in self.diretorio_atual.entries:
+            destino_id = self.diretorio_atual.entries[destino]
+            destino_dir = self.nos[destino_id]
+        elif self.diretorio_atual.parent and destino in self.diretorio_atual.parent.entries:
+            # procura no diretório pai (caso típico: mover entre irmãos)
+            destino_id = self.diretorio_atual.parent.entries[destino]
+            destino_dir = self.nos[destino_id]
+        else:
+            print(f"Erro: Diretório de destino '{destino}' inválido.")
+            return
         if not destino_dir or not destino_dir.is_dir:
             print(f"Erro: Diretório de destino '{destino}' inválido.")
             return
@@ -103,6 +114,7 @@ class SistemaArquivos:
             return
         del self.diretorio_atual.entries[nome_arquivo]
         destino_dir.entries[nome_arquivo] = no_id
+        no.parent = destino_dir
         print(f"Arquivo '{nome_arquivo}' movido para '{destino}' com sucesso.")
 
     def escrever_arquivo(self, nome: str, dados: str):
@@ -112,6 +124,11 @@ class SistemaArquivos:
         no_id = self.diretorio_atual.entries[nome]
         no = self.nos[no_id]
 
+        num_blocos = (len(dados) + BLOCK_SIZE - 1) // BLOCK_SIZE
+        if len(self.blocos_livres) < num_blocos:
+            print("Erro: Espaço insuficiente em disco.")
+            return
+
         atual = no.first_block
         while atual is not None:
             prox = self.disco[atual]['next']
@@ -120,12 +137,6 @@ class SistemaArquivos:
             atual = prox
         no.first_block = None
 
-        num_blocos = (len(dados) + BLOCK_SIZE - 1) // BLOCK_SIZE
-        if len(self.blocos_livres) < num_blocos:
-            print("Erro: Espaço insuficiente em disco.")
-            return
-
-        import random
         random.shuffle(self.blocos_livres)
 
         blocos = [self.blocos_livres.pop(0) for _ in range(num_blocos)]

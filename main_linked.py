@@ -53,6 +53,11 @@ def main():
                 print("Uso: delete <nome>")
             else:
                 fs.deletar(args[0])
+        elif cmd == "detalhes":
+            if len(args) != 1:
+                print("Uso: detalhes <arquivo|diretorio>")
+            else:
+                fs.detalhes(args[0])
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, write, read, delete, exit")
 

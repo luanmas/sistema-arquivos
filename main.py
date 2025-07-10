@@ -1,5 +1,5 @@
 from entity.file_system import FileSystem, benchmark_inode_delete
-from entity.file_system import benchmark_inode_access, benchmark_move_inode
+from entity.file_system import benchmark_inode_access, benchmark_move_inode, benchmark_write_file
 from entity.file_system_linked import SistemaArquivos, benchmark_linked_delete
 
 def main():
@@ -67,6 +67,14 @@ def main():
             for k in [0, 1, 5, 9, 1000, 5000]:
                 tempo_inode = benchmark_inode_access(fs, "teste.txt", k)
                 print(f"INODE: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
+            
+            print("\n=== Benchmark de Escrita ===")
+            sizes = [10, 100, 1000, 10000]
+            for size in sizes:
+                result = benchmark_write_file(fs, f"bench_{size}.txt", size, 1)
+                print(f"Tamanho: {size} bytes | "
+                      f"Tempo médio: {result['average_time']:.4f} ms | "
+                      f"Blocos: {result['blocks_used']}")
         
         elif cmd == 'benchmark-i-delete':
             # Instâncias separadas para cada sistema de arquivos

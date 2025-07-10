@@ -2,6 +2,13 @@ from typing import Dict
 from entity.inode import Inode
 import time
 
+
+def generate_random_data(size):
+    """Gera dados aleatórios do tamanho especificado."""
+    import random
+    import string
+    return ''.join(random.choice(string.ascii_letters) for _ in range(size))
+
 BLOCK_SIZE = 8
 TOTAL_BLOCKS = 10000
 
@@ -313,3 +320,52 @@ def benchmark_inode_delete(fs: FileSystem, file_name: str) -> float:
 
     return (end - start) * 1000
 
+def benchmark_write_file(fs: FileSystem, file_name: str, data_size: int, repetitions: int = 10) -> dict:
+    """
+    Mede o tempo médio de escrita para um arquivo de determinado tamanho.
+    
+    Args:
+        fs: Instância do FileSystem
+        file_name: Nome do arquivo a ser escrito
+        data_size: Tamanho dos dados a serem escritos (em bytes)
+        repetitions: Número de repetições para cálculo da média
+    
+    Returns:
+        Dicionário com métricas de desempenho
+    """
+    results = {
+        'file_size': data_size,
+        'write_times': [],
+        'average_time': 0,
+        'min_time': float('inf'),
+        'max_time': 0,
+        'blocks_used': 0
+    }
+    
+    if file_name in fs.current_dir.entries:
+        fs.delete(file_name)
+
+    data = generate_random_data(data_size)
+    
+    for _ in range(repetitions):
+        start = time.perf_counter()
+        fs.write_file(file_name, data)
+        end = time.perf_counter()
+        
+        write_time = (end - start) * 1000
+        results['write_times'].append(write_time)
+        
+        if write_time < results['min_time']:
+            results['min_time'] = write_time
+        if write_time > results['max_time']:
+            results['max_time'] = write_time
+            
+        inode_id = fs.current_dir.entries[file_name]
+        inode = fs.inodes[inode_id]
+        results['blocks_used'] = len(inode.data_blocks)
+        
+        fs.delete(file_name)
+    
+    results['average_time'] = sum(results['write_times']) / repetitions
+    
+    return results

@@ -3,6 +3,11 @@ from entity.lista import ListaEncadeada
 
 import random
 import time
+import string
+
+def generate_random_data(size):
+    """Gera dados aleatórios do tamanho especificado."""
+    return ''.join(random.choice(string.ascii_letters) for _ in range(size))
 
 BLOCK_SIZE = 8
 TOTAL_BLOCKS = 10000
@@ -325,3 +330,71 @@ def benchmark_linked_delete(fs: SistemaArquivos, file_name: str) -> float:
 
     return (end - start) * 1000
 
+def benchmark_write_file_linked_list(fs: 'SistemaArquivos', file_name: str, data_size: int, repetitions: int = 10) -> dict:
+    def generate_random_data(size):
+        return ''.join(random.choice(string.ascii_letters) for _ in range(size))
+
+    results = {
+        'file_size': data_size,
+        'write_times': [],
+        'average_time': 0,
+        'min_time': float('inf'),
+        'max_time': 0,
+        'blocks_used': 0,
+        'fragmentation': 0.0
+    }
+
+    total_blocos = getattr(fs, 'TOTAL_BLOCKS', 10000)  
+
+    if file_name in fs.diretorio_atual.entries:
+        fs.deletar(file_name)
+
+    data = generate_random_data(data_size)
+
+    for _ in range(repetitions):
+        try:
+            start = time.perf_counter()
+            fs.escrever_arquivo(file_name, data)
+            end = time.perf_counter()
+            write_time = (end - start) * 1000
+            results['write_times'].append(write_time)
+
+            results['min_time'] = min(results['min_time'], write_time)
+            results['max_time'] = max(results['max_time'], write_time)
+
+            no_id = fs.diretorio_atual.entries[file_name]
+            no = fs.nos[no_id]
+
+            blocos = []
+            if hasattr(no, 'data_blocks'):  
+                blocos = no.data_blocks
+            elif hasattr(no, 'first_block'):  
+                atual = no.first_block
+                while atual is not None:
+                    blocos.append(atual)
+                    if isinstance(fs.disco, (list, dict)) and len(fs.disco) > atual:
+                        proximo = fs.disco[atual].get('proximo', 
+                                    fs.disco[atual].get('next', None))
+                        atual = proximo
+                    else:
+                        break
+
+            results['blocks_used'] = len(blocos)
+
+            if len(blocos) > 1:
+                distancias = [abs(blocos[i+1] - blocos[i]) for i in range(len(blocos)-1)]
+                results['fragmentation'] = sum(distancias) / len(distancias) / total_blocos
+
+        except Exception as e:
+            print(f"Erro durante benchmark: {str(e)}")
+            continue
+        finally:
+            if file_name in fs.diretorio_atual.entries:
+                fs.deletar(file_name)
+
+    if results['write_times']:
+        results['average_time'] = sum(results['write_times']) / len(results['write_times'])
+    else:
+        results['average_time'] = 0
+
+    return results

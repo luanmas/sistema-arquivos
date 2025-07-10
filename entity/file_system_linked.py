@@ -193,7 +193,7 @@ class SistemaArquivos:
             del self.diretorio_atual.entries[nome]
             print(f"Arquivo '{nome}' excluído com sucesso.")
             
-     def detalhes(self, nome: str):
+    def detalhes(self, nome: str):
         if nome not in self.diretorio_atual.entries:
             print(f"Erro: '{nome}' não encontrado.")
             return

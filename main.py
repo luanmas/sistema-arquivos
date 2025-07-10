@@ -1,5 +1,6 @@
-from entity.file_system import FileSystem
+from entity.file_system import FileSystem, benchmark_inode_delete
 from entity.file_system import benchmark_inode_access
+from entity.file_system_linked import SistemaArquivos, benchmark_linked_delete
 
 def main():
     fs = FileSystem()
@@ -65,6 +66,47 @@ def main():
             for k in [0, 1, 5, 9, 1000, 5000]:
                 tempo_inode = benchmark_inode_access(fs, "teste.txt", k)
                 print(f"INODE: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
+        elif cmd == 'benchmark-i-delete':
+            # Instâncias separadas para cada sistema de arquivos
+            fs_inode = FileSystem()  # Para inode
+            fs_linked = SistemaArquivos()  # Para alocação encadeada
+            
+            # Tamanhos e nomes dos arquivos de teste (reduzido para 2 arquivos)
+            file_sizes = [100, 1000]  # Tamanhos em bytes
+            file_names = ["teste1.txt", "teste2.txt"]
+
+            print("\n=== Benchmark de Exclusão com Inode ===")
+            # Criar arquivos para o benchmark de inode
+            for name, size in zip(file_names, file_sizes):
+                fs_inode.write_file(name, "abcdefghij" * (size // 10))  # Ajusta o conteúdo
+                # Debug: Verificar número de blocos alocados
+                inode_id = fs_inode.current_dir.entries.get(name)
+                if inode_id is not None:
+                    blocks = len(fs_inode.inodes[inode_id].data_blocks) if hasattr(fs_inode.inodes[inode_id], 'data_blocks') else 'N/A'
+                    print(f"Arquivo '{name}' criado com {size} bytes (blocos: {blocks}).")
+
+            # Executar benchmark de exclusão com inode
+            for name in file_names:
+                tempo_delete = benchmark_inode_delete(fs_inode, name)
+                if tempo_delete >= 0:
+                    print(f"INODE: Exclusão do arquivo '{name}': {tempo_delete:.8f} milisegundos")
+            
+            print("\n=== Benchmark de Exclusão com Alocação Encadeada ===")
+            # Criar arquivos para o benchmark de alocação encadeada
+            for name, size in zip(file_names, file_sizes):
+                fs_linked.escrever_arquivo(name, "abcdefghij" * (size // 10))  # Ajusta o conteúdo
+                # Debug: Verificar número de blocos alocados
+                inode_id = fs_linked.diretorio_atual.entries.get(name)
+                if inode_id is not None:
+                    blocks = 'Encadeado' if hasattr(fs_linked.nos[inode_id], 'first_block') else 'N/A'
+                    print(f"Arquivo '{name}' criado com {size} bytes (blocos: {blocks}).")
+
+            # Executar benchmark de exclusão com alocação encadeada
+            for name in file_names:
+                tempo_delete = benchmark_linked_delete(fs_linked, name)
+                if tempo_delete >= 0:
+                    print(f"ENC: Exclusão do arquivo '{name}': {tempo_delete:.8f} milisegundos")
+            print("\n=== Fim do Benchmark ===")
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, exit")
 

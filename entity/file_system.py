@@ -301,3 +301,15 @@ def benchmark_move_inode(fs: FileSystem, file_name: str, dest_path: str) -> floa
 
     return (end - start) * 1000  # Tempo em milissegundos
 
+def benchmark_inode_delete(fs: FileSystem, file_name: str) -> float:
+    """Mede o tempo para excluir um arquivo usando a estratégia de inode."""
+    if file_name not in fs.current_dir.entries:
+        print(f"Arquivo '{file_name}' não encontrado.")
+        return -1
+
+    start = time.perf_counter()
+    fs.delete(file_name)
+    end = time.perf_counter()
+
+    return (end - start) * 1000
+

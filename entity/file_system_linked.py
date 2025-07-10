@@ -192,6 +192,29 @@ class SistemaArquivos:
             del self.nos[no_id]
             del self.diretorio_atual.entries[nome]
             print(f"Arquivo '{nome}' excluído com sucesso.")
+            
+     def detalhes(self, nome: str):
+        if nome not in self.diretorio_atual.entries:
+            print(f"Erro: '{nome}' não encontrado.")
+            return
+
+        no_id = self.diretorio_atual.entries[nome]
+        no = self.nos[no_id]
+
+        print(f"ID: {no.id}")
+        print(f"Nome: {no.name}")
+        print(f"Diretório: {'Sim' if no.is_dir else 'Não'}")
+
+        if no.is_dir:
+            print(f"Entradas: {list(no.entries.keys())}")
+        else:
+            print(f"Tamanho: {no.size} bytes")
+            blocos = []
+            atual = no.first_block
+            while atual is not None:
+                blocos.append(atual)
+                atual = self.disco[atual]['next']
+            print(f"Blocos alocados: {blocos}")
 
 def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: int) -> float:
     """Mede o tempo para acessar o bloco k de um arquivo via lista encadeada no SistemaArquivos."""
@@ -222,6 +245,3 @@ def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: i
 
 
     return (end - start) * 1000  # milissegundos
-
-    
-    

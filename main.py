@@ -52,6 +52,11 @@ def main():
                 print("Uso: delete <nome>")
             else:
                 fs.delete(args[0])
+        elif cmd == "detalhes":
+            if len(args) != 1:
+                print("Uso: detalhes <arquivo|diretorio>")
+            else:
+                fs.detalhes(args[0])
 
         elif cmd == 'benchmark':
             fs = FileSystem()

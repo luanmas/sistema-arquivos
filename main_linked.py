@@ -61,6 +61,11 @@ def main():
             for k in [0, 1, 5, 9, 1000, 5000]:
                 tempo_inode = benchmark_inode_access_linked_list(fs, "teste.txt", k)
                 print(f"LINKED-LIST: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
+        elif cmd == "detalhes":
+            if len(args) != 1:
+                print("Uso: detalhes <arquivo|diretorio>")
+            else:
+                fs.detalhes(args[0])
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, write, read, delete, exit")
 

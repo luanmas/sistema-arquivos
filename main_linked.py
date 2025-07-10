@@ -54,7 +54,8 @@ def main():
                 print("Uso: delete <nome>")
             else:
                 fs.deletar(args[0])
-
+        elif cmd == "status":
+            fs.status()
         elif cmd == 'benchmark':
             fs.escrever_arquivo("teste.txt", "abcdefghij" * 100)  # Cria um arquivo com 100 bytes (10 blocos)
 

@@ -245,3 +245,15 @@ def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: i
 
 
     return (end - start) * 1000  # milissegundos
+
+def benchmark_linked_delete(fs: SistemaArquivos, file_name: str) -> float:
+    """Mede o tempo para excluir um arquivo usando a estratégia de alocação encadeada."""
+    if file_name not in fs.diretorio_atual.entries:
+        print(f"Arquivo '{file_name}' não encontrado.")
+        return -1
+
+    start = time.perf_counter()
+    fs.deletar(file_name)
+    end = time.perf_counter()
+
+    return (end - start) * 1000

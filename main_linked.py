@@ -1,5 +1,4 @@
-from entity.file_system_linked import SistemaArquivos
-from entity.file_system_linked import benchmark_inode_access_linked_list, benchmark_move_linked_list
+from entity.file_system_linked import SistemaArquivos, benchmark_inode_access_linked_list, benchmark_move_linked_list, benchmark_write_file_linked_list
 
 def main():
     fs = SistemaArquivos()
@@ -62,6 +61,15 @@ def main():
             for k in [0, 1, 5, 9, 1000, 5000]:
                 tempo_inode = benchmark_inode_access_linked_list(fs, "teste.txt", k)
                 print(f"LINKED-LIST: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
+            
+            print("\n=== Benchmark de Escrita (Lista Encadeada) ===")
+            tamanhos = [10, 100, 1000, 10000]
+            
+            for tamanho in tamanhos:
+                resultado = benchmark_write_file_linked_list(fs, f"bench_{tamanho}.txt", tamanho, 1)
+                print(f"Tamanho: {tamanho:6} bytes | "
+                f"Tempo: {resultado['average_time']:7.3f} ms | "
+                f"Blocos: {resultado['blocks_used']:4}")
         elif cmd == "detalhes":
             if len(args) != 1:
                 print("Uso: detalhes <arquivo|diretorio>")

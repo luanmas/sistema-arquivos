@@ -181,7 +181,7 @@ class FileSystem:
             del self.current_dir.entries[name]
             print(f"Arquivo '{name}' excluído com sucesso.")
             
-     def detalhes(self, nome: str):
+    def detalhes(self, nome: str):
         if nome not in self.current_dir.entries:
             print(f"Erro: '{nome}' não encontrado.")
             return

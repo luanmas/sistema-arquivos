@@ -57,7 +57,8 @@ def main():
                 print("Uso: detalhes <arquivo|diretorio>")
             else:
                 fs.detalhes(args[0])
-
+        elif cmd == "status":
+            fs.status()
         elif cmd == 'benchmark':
             fs = FileSystem()
             fs.write_file("teste.txt", "abcdefghij" * 100)  # Cria um arquivo com 100 bytes (10 blocos)

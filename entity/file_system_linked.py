@@ -216,6 +216,31 @@ class SistemaArquivos:
                 atual = self.disco[atual]['next']
             print(f"Blocos alocados: {blocos}")
 
+    def status(self):
+        total_blocos = TOTAL_BLOCKS
+        livres = len(self.blocos_livres)
+        usados = total_blocos - livres
+
+        arquivos = sum(1 for n in self.nos.values() if not n.is_dir)
+        diretorios = sum(1 for n in self.nos.values() if n.is_dir)
+
+        print("\n=== STATUS DO SISTEMA DE ARQUIVOS (lista encadeada) ===")
+        print(f"Blocos totais: {total_blocos}")
+        print(f"Blocos usados: {usados}")
+        print(f"Blocos livres: {livres}")
+        print(f"Arquivos: {arquivos}")
+        print(f"Diretórios: {diretorios}")
+        print("Uso por arquivo:")
+        for n in self.nos.values():
+            if not n.is_dir:
+                blocos = []
+                atual = n.first_block
+                while atual is not None:
+                    blocos.append(atual)
+                    atual = self.disco[atual]['next']
+                print(f"  - {n.name}: {blocos} ({n.size} bytes)")
+
+
 def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: int) -> float:
     """Mede o tempo para acessar o bloco k de um arquivo via lista encadeada no SistemaArquivos."""
     if file_name not in fs.diretorio_atual.entries:

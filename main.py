@@ -1,4 +1,5 @@
 from entity.file_system import FileSystem
+from entity.file_system import benchmark_inode_access
 
 def main():
     fs = FileSystem()
@@ -57,6 +58,13 @@ def main():
             else:
                 fs.detalhes(args[0])
 
+        elif cmd == 'benchmark':
+            fs = FileSystem()
+            fs.write_file("teste.txt", "abcdefghij" * 100)  # Cria um arquivo com 100 bytes (10 blocos)
+
+            for k in [0, 1, 5, 9, 1000, 5000]:
+                tempo_inode = benchmark_inode_access(fs, "teste.txt", k)
+                print(f"INODE: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, exit")
 

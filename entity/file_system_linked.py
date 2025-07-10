@@ -2,9 +2,10 @@ from typing import Dict
 from entity.lista import ListaEncadeada
 
 import random
+import time
 
 BLOCK_SIZE = 8
-TOTAL_BLOCKS = 10
+TOTAL_BLOCKS = 10000
 
 class SistemaArquivos:
     def __init__(self):
@@ -191,3 +192,36 @@ class SistemaArquivos:
             del self.nos[no_id]
             del self.diretorio_atual.entries[nome]
             print(f"Arquivo '{nome}' excluído com sucesso.")
+
+def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: int) -> float:
+    """Mede o tempo para acessar o bloco k de um arquivo via lista encadeada no SistemaArquivos."""
+    if file_name not in fs.diretorio_atual.entries:
+        print(f"Arquivo '{file_name}' não encontrado no diretório atual.")
+        return -1
+
+    no_id = fs.diretorio_atual.entries[file_name]
+    no = fs.nos[no_id]
+
+    if no.is_dir:
+        print(f"'{file_name}' é um diretório, não um arquivo.")
+        return -1
+
+    start = time.perf_counter()
+    atual = no.first_block
+    indice = 0
+    while atual is not None and indice < k:
+        atual = fs.disco[atual]['next']
+        indice += 1
+
+    if atual is None:
+        print(f"Bloco {k} fora do intervalo do arquivo.")
+        return -1
+
+    bloco = fs.disco[atual]
+    end = time.perf_counter()
+
+
+    return (end - start) * 1000  # milissegundos
+
+    
+    

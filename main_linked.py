@@ -1,4 +1,5 @@
 from entity.file_system_linked import SistemaArquivos
+from entity.file_system_linked import benchmark_inode_access_linked_list
 
 def main():
     fs = SistemaArquivos()
@@ -53,6 +54,13 @@ def main():
                 print("Uso: delete <nome>")
             else:
                 fs.deletar(args[0])
+
+        elif cmd == 'benchmark':
+            fs.escrever_arquivo("teste.txt", "abcdefghij" * 100)  # Cria um arquivo com 100 bytes (10 blocos)
+
+            for k in [0, 1, 5, 9, 1000, 5000]:
+                tempo_inode = benchmark_inode_access_linked_list(fs, "teste.txt", k)
+                print(f"LINKED-LIST: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, write, read, delete, exit")
 

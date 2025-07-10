@@ -1,8 +1,9 @@
 from typing import Dict
 from entity.inode import Inode
+import time
 
 BLOCK_SIZE = 8
-TOTAL_BLOCKS = 10
+TOTAL_BLOCKS = 10000
 
 class FileSystem:
     def __init__(self):
@@ -196,3 +197,23 @@ class FileSystem:
             del self.inodes[inode_id]
             del self.current_dir.entries[name]
             print(f"Arquivo '{name}' excluído com sucesso.")
+
+def benchmark_inode_access(fs: FileSystem, file_name: str, k: int) -> float:
+    """Mede o tempo para acessar o bloco k de um arquivo via inode."""
+    if file_name not in fs.current_dir.entries:
+        print(f"Arquivo '{file_name}' não encontrado.")
+        return -1
+
+    inode_id = fs.current_dir.entries[file_name]
+    inode = fs.inodes[inode_id]
+
+    if k >= len(inode.data_blocks):
+        print(f"Bloco {k} fora do intervalo do arquivo.")
+        return -1
+
+    start = time.perf_counter()
+    _ = fs.disk[inode.data_blocks[k]]
+    end = time.perf_counter()
+
+    return (end - start)*1000
+

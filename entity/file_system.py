@@ -111,6 +111,30 @@ class FileSystem:
         file_inode.parent = dest_dir
         print(f"Arquivo '{file_name}' movido para '{dest_path}' com sucesso.")
 
+    def _resolve_path(self, path: str):
+        if path == "/":
+            return self.root
+        parts = path.strip("/").split("/")
+        current = self.root if path.startswith("/") else self.current_dir
+
+        for part in parts:
+            if part == ".":
+                continue
+            elif part == "..":
+                for inode in self.inodes.values():
+                    if inode.is_dir and current.id in inode.entries.values():
+                        current = inode
+                        break
+            else:
+                if part not in current.entries:
+                    return None
+                inode_id = current.entries[part]
+                inode = self.inodes[inode_id]
+                if not inode.is_dir:
+                    return None
+                current = inode
+        return current
+
     def write_file(self, name: str, data: str):
         if name not in self.current_dir.entries:
             self.create_file(name)
@@ -217,3 +241,43 @@ def benchmark_inode_access(fs: FileSystem, file_name: str, k: int) -> float:
     end = time.perf_counter()
 
     return (end - start)*1000
+
+import time
+
+def benchmark_move_inode(fs: FileSystem, file_name: str, dest_path: str) -> float:
+    """
+    Mede o tempo para mover um arquivo no sistema de arquivos com i-nodes.
+    Retorna o tempo em milissegundos.
+    """
+    if file_name not in fs.current_dir.entries:
+        print(f"Erro: Arquivo '{file_name}' não encontrado no diretório atual.")
+        return -1
+
+    inode_id = fs.current_dir.entries[file_name]
+    inode = fs.inodes[inode_id]
+
+    if inode.is_dir:
+        print(f"Erro: '{file_name}' é um diretório.")
+        return -1
+
+    # Resolve o diretório de destino
+    if dest_path == "/":
+        dest_dir = fs.root
+    else:
+        dest_dir = fs._resolve_path(dest_path)
+        if dest_dir is None or not dest_dir.is_dir:
+            print(f"Erro: Diretório de destino '{dest_path}' não encontrado ou não é um diretório.")
+            return -1
+
+    if file_name in dest_dir.entries:
+        print(f"Erro: Já existe um arquivo chamado '{file_name}' em '{dest_path}'.")
+        return -1
+
+    # Medição de tempo
+    start = time.perf_counter()
+    del fs.current_dir.entries[file_name]
+    dest_dir.entries[file_name] = inode_id
+    end = time.perf_counter()
+
+    return (end - start) * 1000  # Tempo em milissegundos
+

@@ -1,5 +1,5 @@
 from entity.file_system import FileSystem
-from entity.file_system import benchmark_inode_access
+from entity.file_system import benchmark_inode_access, benchmark_move_inode
 
 def main():
     fs = FileSystem()
@@ -65,6 +65,14 @@ def main():
             for k in [0, 1, 5, 9, 1000, 5000]:
                 tempo_inode = benchmark_inode_access(fs, "teste.txt", k)
                 print(f"INODE: Acesso ao bloco {k}: {tempo_inode:.8f} milisegundos")
+
+        elif cmd == 'benchmark-move':
+
+            fs.write_file("arquivo1.txt", "abcdefghij")
+            fs.create_dir('destino')
+            tempo_ms = benchmark_move_inode(fs, "arquivo1.txt", "destino")
+            if tempo_ms >= 0:
+                print(f"Tempo para mover: {tempo_ms:.4f} ms")
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, exit")
 

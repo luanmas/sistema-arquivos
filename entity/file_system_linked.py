@@ -270,3 +270,46 @@ def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: i
 
 
     return (end - start) * 1000  # milissegundos
+
+import time
+
+def benchmark_move_linked_list(fs: SistemaArquivos, nome_arquivo: str, destino: str) -> float:
+    if nome_arquivo not in fs.diretorio_atual.entries:
+        print(f"Arquivo '{nome_arquivo}' não encontrado no diretório atual.")
+        return -1
+
+    no_id = fs.diretorio_atual.entries[nome_arquivo]
+    no = fs.nos[no_id]
+
+    if no.is_dir:
+        print(f"'{nome_arquivo}' é um diretório, não um arquivo.")
+        return -1
+
+    if destino == "/":
+        destino_dir = fs.root
+    elif destino in fs.diretorio_atual.entries:
+        destino_id = fs.diretorio_atual.entries[destino]
+        destino_dir = fs.nos[destino_id]
+    elif fs.diretorio_atual.parent and destino in fs.diretorio_atual.parent.entries:
+        destino_id = fs.diretorio_atual.parent.entries[destino]
+        destino_dir = fs.nos[destino_id]
+    else:
+        print(f"Diretório de destino '{destino}' inválido.")
+        return -1
+
+    if not destino_dir or not destino_dir.is_dir:
+        print(f"Diretório de destino '{destino}' inválido.")
+        return -1
+
+    if nome_arquivo in destino_dir.entries:
+        print(f"Já existe '{nome_arquivo}' em '{destino}'.")
+        return -1
+
+    start = time.perf_counter()
+    del fs.diretorio_atual.entries[nome_arquivo]
+    destino_dir.entries[nome_arquivo] = no_id
+    no.parent = destino_dir
+    end = time.perf_counter()
+
+    return (end - start) * 1000  
+

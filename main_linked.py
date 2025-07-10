@@ -1,5 +1,5 @@
 from entity.file_system_linked import SistemaArquivos
-from entity.file_system_linked import benchmark_inode_access_linked_list
+from entity.file_system_linked import benchmark_inode_access_linked_list, benchmark_move_linked_list
 
 def main():
     fs = SistemaArquivos()
@@ -67,6 +67,15 @@ def main():
                 print("Uso: detalhes <arquivo|diretorio>")
             else:
                 fs.detalhes(args[0])
+
+        elif cmd == 'benchmark-move':
+
+            fs.escrever_arquivo("arquivo1.txt", "abcdefghij")
+            fs.criar_diretorio('destino')
+            tempo_ms = benchmark_move_linked_list(fs, "arquivo1.txt", "destino")
+            if tempo_ms >= 0:
+                print(f"Tempo para mover: {tempo_ms:.4f} ms")
+
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, write, read, delete, exit")
 

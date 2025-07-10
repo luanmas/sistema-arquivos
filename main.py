@@ -1,6 +1,8 @@
 from entity.file_system import FileSystem, benchmark_inode_delete
 from entity.file_system import benchmark_inode_access
 from entity.file_system_linked import SistemaArquivos, benchmark_linked_delete
+from entity.file_system import FileSystem
+from entity.file_system import benchmark_inode_access, benchmark_move_inode
 
 def main():
     fs = FileSystem()
@@ -58,7 +60,8 @@ def main():
                 print("Uso: detalhes <arquivo|diretorio>")
             else:
                 fs.detalhes(args[0])
-
+        elif cmd == "status":
+            fs.status()
         elif cmd == 'benchmark':
             fs = FileSystem()
             fs.write_file("teste.txt", "abcdefghij" * 100)  # Cria um arquivo com 100 bytes (10 blocos)
@@ -107,6 +110,14 @@ def main():
                 if tempo_delete >= 0:
                     print(f"ENC: Exclusão do arquivo '{name}': {tempo_delete:.8f} milisegundos")
             print("\n=== Fim do Benchmark ===")
+
+        elif cmd == 'benchmark-move':
+
+            fs.write_file("arquivo1.txt", "abcdefghij")
+            fs.create_dir('destino')
+            tempo_ms = benchmark_move_inode(fs, "arquivo1.txt", "destino")
+            if tempo_ms >= 0:
+                print(f"Tempo para mover: {tempo_ms:.4f} ms")
         else:
             print("Comando inválido. Comandos disponíveis: create, ls, cd, move, exit")
 

@@ -111,6 +111,30 @@ class FileSystem:
         file_inode.parent = dest_dir
         print(f"Arquivo '{file_name}' movido para '{dest_path}' com sucesso.")
 
+    def _resolve_path(self, path: str):
+        if path == "/":
+            return self.root
+        parts = path.strip("/").split("/")
+        current = self.root if path.startswith("/") else self.current_dir
+
+        for part in parts:
+            if part == ".":
+                continue
+            elif part == "..":
+                for inode in self.inodes.values():
+                    if inode.is_dir and current.id in inode.entries.values():
+                        current = inode
+                        break
+            else:
+                if part not in current.entries:
+                    return None
+                inode_id = current.entries[part]
+                inode = self.inodes[inode_id]
+                if not inode.is_dir:
+                    return None
+                current = inode
+        return current
+
     def write_file(self, name: str, data: str):
         if name not in self.current_dir.entries:
             self.create_file(name)
@@ -118,16 +142,16 @@ class FileSystem:
         inode_id = self.current_dir.entries[name]
         inode = self.inodes[inode_id]
 
-        for b in inode.data_blocks:
-            self.disk[b] = ''
-            self.free_blocks.append(b)
-
         num_blocks = (len(data) + BLOCK_SIZE - 1) // BLOCK_SIZE
         if len(self.free_blocks) < num_blocks:
             print("Erro: Espaço insuficiente em disco.")
             inode.size = 0
             inode.data_blocks = []
             return
+
+        for b in inode.data_blocks:
+            self.disk[b] = ''
+            self.free_blocks.append(b)
 
         blocos_alocados = [self.free_blocks.pop(0) for _ in range(num_blocks)]
 
@@ -198,6 +222,26 @@ class FileSystem:
         else:
             print(f"Tamanho: {inode.size} bytes")
             print(f"Blocos alocados: {inode.data_blocks}")
+
+    def status(self):
+        total_blocos = TOTAL_BLOCKS
+        livres = len(self.free_blocks)
+        usados = total_blocos - livres
+
+        arquivos = sum(1 for i in self.inodes.values() if not i.is_dir)
+        diretorios = sum(1 for i in self.inodes.values() if i.is_dir)
+
+        print("\n=== STATUS DO SISTEMA DE ARQUIVOS (i-nodes) ===")
+        print(f"Blocos totais: {total_blocos}")
+        print(f"Blocos usados: {usados}")
+        print(f"Blocos livres: {livres}")
+        print(f"Arquivos: {arquivos}")
+        print(f"Diretórios: {diretorios}")
+        print("Uso por arquivo:")
+        for inode in self.inodes.values():
+            if not inode.is_dir:
+                print(f"  - {inode.name}: {inode.data_blocks} ({inode.size} bytes)")
+
 
 def benchmark_inode_access(fs: FileSystem, file_name: str, k: int) -> float:
     """Mede o tempo para acessar o bloco k de um arquivo via inode."""

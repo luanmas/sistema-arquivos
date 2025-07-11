@@ -6,11 +6,10 @@ import time
 import string
 
 def generate_random_data(size):
-    """Gera dados aleatórios do tamanho especificado."""
     return ''.join(random.choice(string.ascii_letters) for _ in range(size))
 
 BLOCK_SIZE = 8
-TOTAL_BLOCKS = 10000
+TOTAL_BLOCKS = 1000000
 
 class SistemaArquivos:
     def __init__(self):
@@ -106,7 +105,6 @@ class SistemaArquivos:
             destino_id = self.diretorio_atual.entries[destino]
             destino_dir = self.nos[destino_id]
         elif self.diretorio_atual.parent and destino in self.diretorio_atual.parent.entries:
-            # procura no diretório pai (caso típico: mover entre irmãos)
             destino_id = self.diretorio_atual.parent.entries[destino]
             destino_dir = self.nos[destino_id]
         else:
@@ -274,7 +272,7 @@ def benchmark_inode_access_linked_list(fs: SistemaArquivos, file_name: str, k: i
     end = time.perf_counter()
 
 
-    return (end - start) * 1000  # milissegundos
+    return (end - start) * 1000
 
 import time
 

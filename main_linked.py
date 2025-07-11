@@ -56,7 +56,7 @@ def main():
         elif cmd == "status":
             fs.status()
         elif cmd == 'benchmark':
-            fs.escrever_arquivo("teste.txt", "abcdefghij" * 100)  # Cria um arquivo com 100 bytes (10 blocos)
+            fs.escrever_arquivo("teste.txt", "abcdefghij" * 100)
 
             for k in [0, 1, 5, 9, 1000, 5000]:
                 tempo_inode = benchmark_inode_access_linked_list(fs, "teste.txt", k)
@@ -77,7 +77,6 @@ def main():
                 fs.detalhes(args[0])
 
         elif cmd == 'benchmark-move':
-
             fs.escrever_arquivo("arquivo1.txt", "abcdefghij")
             fs.criar_diretorio('destino')
             tempo_ms = benchmark_move_linked_list(fs, "arquivo1.txt", "destino")

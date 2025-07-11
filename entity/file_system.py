@@ -1,6 +1,7 @@
 from typing import Dict
 from entity.inode import Inode
 import time
+import random
 
 
 def generate_random_data(size):
@@ -10,7 +11,7 @@ def generate_random_data(size):
     return ''.join(random.choice(string.ascii_letters) for _ in range(size))
 
 BLOCK_SIZE = 8
-TOTAL_BLOCKS = 10000
+TOTAL_BLOCKS = 1000000
 
 class FileSystem:
     def __init__(self):
@@ -160,6 +161,7 @@ class FileSystem:
             self.disk[b] = ''
             self.free_blocks.append(b)
 
+        random.shuffle(self.free_blocks)
         blocos_alocados = [self.free_blocks.pop(0) for _ in range(num_blocks)]
 
         for i, b in enumerate(blocos_alocados):
@@ -287,7 +289,6 @@ def benchmark_move_inode(fs: FileSystem, file_name: str, dest_path: str) -> floa
         print(f"Erro: '{file_name}' é um diretório.")
         return -1
 
-    # Resolve o diretório de destino
     if dest_path == "/":
         dest_dir = fs.root
     else:
@@ -300,13 +301,12 @@ def benchmark_move_inode(fs: FileSystem, file_name: str, dest_path: str) -> floa
         print(f"Erro: Já existe um arquivo chamado '{file_name}' em '{dest_path}'.")
         return -1
 
-    # Medição de tempo
     start = time.perf_counter()
     del fs.current_dir.entries[file_name]
     dest_dir.entries[file_name] = inode_id
     end = time.perf_counter()
 
-    return (end - start) * 1000  # Tempo em milissegundos
+    return (end - start) * 1000
 
 def benchmark_inode_delete(fs: FileSystem, file_name: str) -> float:
     """Mede o tempo para excluir um arquivo usando a estratégia de inode."""
